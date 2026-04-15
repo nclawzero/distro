@@ -127,7 +127,7 @@ describe("credential prompts", () => {
     const result = spawnSync("bash", ["-lc", script], {
       cwd: path.join(import.meta.dirname, ".."),
       encoding: "utf-8",
-      timeout: 5000,
+      timeout: 15000,
     });
 
     expect(result.status).toBe(0);

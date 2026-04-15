@@ -1,109 +1,103 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2026 Jason Perlow. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-# Agent manifest for Hermes Agent (Nous Research).
+# Agent manifest for ZeroClaw (zeroclaw-labs).
 # Declares the integration contract between NemoClaw and the sandboxed agent.
 
-name: hermes
-display_name: "Hermes Agent"
-description: "Self-improving AI agent with learning loop (Nous Research)"
-version_constraint: ">=0.8.0"
-language: python
+name: zeroclaw
+display_name: "ZeroClaw"
+description: "Lightweight autonomous agent runtime in Rust (zeroclaw-labs)"
+version_constraint: ">=0.6.0"
+language: rust
 license: MIT
-homepage: "https://github.com/NousResearch/hermes-agent"
+homepage: "https://github.com/zeroclaw-labs/zeroclaw"
 
 # ── Binary & process ────────────────────────────────────────────
-install_method: curl  # curl install.sh | bash
-binary_path: /usr/local/bin/hermes
-version_command: "hermes --version"
-expected_version: "2026.4.8"
-gateway_command: "hermes gateway run"
+install_method: prebuilt  # pre-built binary downloaded from GitHub releases
+binary_path: /usr/local/bin/zeroclaw
+gateway_command: "zeroclaw gateway start"
 
 # ── Health probe ────────────────────────────────────────────────
-# The API server adapter listens on 8642 by default and exposes
-# GET /health -> {"status": "ok", "platform": "hermes-agent"}
+# ZeroClaw exposes GET /health -> {"status": "ok", ...} on the gateway port.
 health_probe:
-  url: "http://localhost:8642/health"
-  port: 8642
-  timeout_seconds: 90
+  url: "http://localhost:42617/health"
+  port: 42617
+  timeout_seconds: 60
 
 # ── Dashboard / UI ──────────────────────────────────────────────
-# Hermes exposes an OpenAI-compatible API, not a web dashboard.
-# Any OpenAI-compatible frontend (Open WebUI, LobeChat, etc.) can
-# connect at http://localhost:8642/v1.
+# ZeroClaw exposes an OpenAI-compatible API on port 42617 and serves
+# its web frontend from the same port.
 forward_ports:
-  - 8642
+  - 42617
 
 # ── Configuration ───────────────────────────────────────────────
 config:
-  immutable_dir: /sandbox/.hermes
-  writable_dir: /sandbox/.hermes-data
-  config_file: config.yaml        # relative to immutable_dir
-  env_file: .env                  # relative to immutable_dir — API keys
-  auth_file: auth.json            # OAuth tokens (Nous Portal, Codex, etc.)
-  format: yaml
+  immutable_dir: /sandbox/.zeroclaw
+  writable_dir: /sandbox/.zeroclaw-data
+  config_file: config.toml      # relative to immutable_dir
+  format: toml
 
 # ── State directories ──────────────────────────────────────────
 # Symlinked from immutable_dir -> writable_dir so the agent can
 # write state while the config directory stays Landlock read-only.
 state_dirs:
-  - memories
-  - sessions
-  - skills
-  - plugins
+  - workspace
+  - memory
+  - channels_config
   - cron
   - logs
-  - skins
-  - plans
-  - workspace
-  - profiles
+  - plugins
   - cache
-  - pairing
+
+# ── Skill system ───────────────────────────────────────────────
+# ZeroClaw uses WASM plugins (agents/zeroclaw/plugin/), not the
+# OpenClaw-compatible TypeScript skill system. Skill install is
+# not supported; use the ZeroClaw plugin SDK instead.
+supports_skills: false
 
 # ── Home directory env var ─────────────────────────────────────
 # NemoClaw exports this env var in recovery scripts so the agent
 # process can locate its writable state directory.
-home_env_var: HERMES_HOME
+home_env_var: ZEROCLAW_HOME
 
 # ── Authentication ──────────────────────────────────────────────
-# Hermes does NOT have OpenClaw-style browser device pairing.
-# Web UI auth is Bearer token via API_SERVER_KEY env var.
-# DM pairing for messaging users: `hermes pairing approve <platform> <code>`
+# ZeroClaw does NOT have OpenClaw-style browser device pairing.
+# Pairing is optional and done via `zeroclaw gateway get-paircode`.
+# We disable it for sandbox deployments managed by NemoClaw.
 device_pairing: false
 web_auth_method: bearer_token
-web_auth_env: API_SERVER_KEY
+web_auth_env: ZEROCLAW_API_KEY
 
 # ── Messaging platforms ─────────────────────────────────────────
-# Hermes natively supports 14 platforms. We start with the 3 that
-# OpenShell already has L7 proxy support for.
+# ZeroClaw supports multiple channels via its channel plugin system.
 messaging_platforms:
   supported:
     - telegram
     - discord
     - slack
-  # Future: whatsapp, signal, matrix, mattermost, email, etc.
-  # Each needs a network policy entry before enabling.
 
 # ── Inference ───────────────────────────────────────────────────
-# Hermes supports custom OpenAI-compatible endpoints natively via
-# provider: "custom" + base_url in config.yaml. This is how we
-# route through OpenShell's inference.local proxy.
+# ZeroClaw routes inference through the "compatible" provider type
+# which wraps any OpenAI-compatible endpoint. We configure it to
+# use OpenShell's inference.local proxy.
 inference:
-  provider_type: custom
-  base_url_config_key: "model.base_url"
-  model_config_key: "model.default"
-  proxy_support: implicit  # via httpx (OpenAI SDK dep)
+  provider_type: compatible
+  base_url_config_key: "provider.compatible.base_url"
+  model_config_key: "default_model"
+  proxy_support: explicit  # set via HTTP_PROXY env var
 
 # ── Phone-home hosts ───────────────────────────────────────────
 # Agent-specific egress endpoints needed for updates, auth, etc.
 phone_home_hosts:
-  - nousresearch.com
-  - hermes-agent.nousresearch.com
+  - zeroclaw-labs.com
+  - api.zeroclaw-labs.com
 
 # ── Package registry ───────────────────────────────────────────
-# Hermes uses pip for plugin/skill installs (replaces npm for OpenClaw).
+# ZeroClaw plugins are WASM modules. Skills may need crates.io for
+# compilation (build-time only, not runtime sandbox egress).
 package_registry:
   hosts:
-    - pypi.org
-    - files.pythonhosted.org
-  binary: /usr/local/bin/pip3
+    - crates.io
+    - static.crates.io
+  binary: /usr/local/bin/cargo

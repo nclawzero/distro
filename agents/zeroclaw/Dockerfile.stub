@@ -1,0 +1,200 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2026 Jason Perlow. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# ZeroClaw sandbox IMAGE — STUB variant for local installer testing.
+#
+# ┌─────────────────────────────────────────────────────────────────┐
+# │  STUB IMAGE — NOT FOR PRODUCTION                                │
+# │                                                                 │
+# │  Replaces agents/zeroclaw/Dockerfile for testing on OmniStation │
+# │  where the following are blocked:                               │
+# │    - Docker Hub (rust:1.87-bookworm for WASM build)             │
+# │    - GitHub Releases CDN (zeroclaw binary, gosu binary)         │
+# │  Changes vs real Dockerfile:                                    │
+# │    1. No Rust WASM build stage — placeholder WASM written inline│
+# │    2. apt-get hardening step skipped (stub rootfs has no apt)   │
+# │    3. config.toml generated via Python (host Node.js is v18,    │
+# │       too old for --experimental-strip-types needed by v22)     │
+# │    4. LABEL io.nemoclaw.stub=true on the final image            │
+# │                                                                 │
+# │  TODO (LIVE TEST on Brev):                                      │
+# │    Delete this file and use the real Dockerfile which:          │
+# │    - Builds the WASM plugin from agents/zeroclaw/plugin/        │
+# │      using rust:1.87-bookworm + wasm32-wasip1 target            │
+# │    - Generates config.toml using node --experimental-strip-types│
+# │    - Applies apt-get hardening to remove build tools            │
+# │    Test: nemoclaw onboard --agent zeroclaw (on Brev system)     │
+# └─────────────────────────────────────────────────────────────────┘
+#
+# Built by scripts/build-stub-images.sh — do not build directly.
+
+# BASE_IMAGE must be declared before the first FROM so it can be referenced
+# in the second FROM in this multi-stage build.
+ARG BASE_IMAGE=ghcr.io/nvidia/nemoclaw/zeroclaw-sandbox-base:latest
+
+# ── Stage 1: Stub WASM placeholder ─────────────────────────────────
+# TODO (LIVE TEST on Brev): Replace this stage with:
+#   FROM rust:1.87-bookworm AS wasm-builder
+#   RUN rustup target add wasm32-wasip1
+#   COPY agents/zeroclaw/plugin/ /build/
+#   WORKDIR /build
+#   RUN cargo build --target wasm32-wasip1 --release
+# hadolint ignore=DL3007
+FROM nemoclaw-stub-rootfs:latest AS wasm-builder
+
+# Write a minimal valid WASM module (magic bytes + version only, no exports).
+# The stub zeroclaw binary ignores plugin loading entirely, so content doesn't
+# matter for local health-probe testing. The cp commands in stage 2 still need
+# the file to exist at this exact path.
+RUN python3 -c \
+    "open('/tmp/nemoclaw_zeroclaw_plugin.wasm','wb').write(b'\x00asm\x01\x00\x00\x00')" \
+    && echo "[stub] placeholder WASM written (8 bytes, magic+version only)"
+
+# ── Stage 2: Application image ──────────────────────────────────────
+FROM ${BASE_IMAGE}
+
+LABEL io.nemoclaw.stub="true"
+LABEL io.nemoclaw.stub.reason="bypasses-rust-wasm-build-and-node22-strip-types"
+LABEL io.nemoclaw.stub.replace-with="agents/zeroclaw/Dockerfile"
+
+# NOTE: apt-get hardening step from the real Dockerfile is omitted here.
+# The stub base image has no apt-get. That step removes build tools from the
+# real node:22-slim layer which the stub never had to begin with.
+# TODO (LIVE TEST): Verify apt-get hardening runs cleanly on Brev.
+
+# Copy placeholder WASM from the stub build stage
+COPY --from=wasm-builder \
+    /tmp/nemoclaw_zeroclaw_plugin.wasm \
+    /opt/nemoclaw-zeroclaw-plugin/nemoclaw.wasm
+
+# Copy plugin manifest (real file, not a stub)
+COPY agents/zeroclaw/plugin/manifest.toml /opt/nemoclaw-zeroclaw-plugin/manifest.toml
+
+# Copy config generation script and blueprint
+COPY agents/zeroclaw/generate-config.ts /opt/nemoclaw-generate-config.ts
+COPY nemoclaw-blueprint/ /opt/nemoclaw-blueprint/
+
+# Copy startup script
+COPY agents/zeroclaw/start.sh /usr/local/bin/nemoclaw-start
+RUN chmod 755 /usr/local/bin/nemoclaw-start
+
+# Build args for config (same as real Dockerfile)
+ARG NEMOCLAW_MODEL=nvidia/llama-3.1-nemotron-70b-instruct
+ARG NEMOCLAW_PROVIDER_KEY=compatible
+ARG NEMOCLAW_INFERENCE_BASE_URL=https://inference.local/v1
+ARG NEMOCLAW_MESSAGING_CHANNELS_B64=W10=
+ARG NEMOCLAW_MESSAGING_ALLOWED_IDS_B64=e30=
+ARG NEMOCLAW_BUILD_ID=default
+
+ENV NEMOCLAW_MODEL=${NEMOCLAW_MODEL} \
+    NEMOCLAW_PROVIDER_KEY=${NEMOCLAW_PROVIDER_KEY} \
+    NEMOCLAW_INFERENCE_BASE_URL=${NEMOCLAW_INFERENCE_BASE_URL} \
+    NEMOCLAW_MESSAGING_CHANNELS_B64=${NEMOCLAW_MESSAGING_CHANNELS_B64} \
+    NEMOCLAW_MESSAGING_ALLOWED_IDS_B64=${NEMOCLAW_MESSAGING_ALLOWED_IDS_B64}
+
+WORKDIR /sandbox
+
+# Ensure all /opt files are readable by non-root users before USER switch.
+# Build context files may arrive with 660 permissions (rw-rw----) when the
+# repo was cloned with a group-write umask; 'other' would then be denied.
+RUN chmod -R a+rX /opt/nemoclaw-blueprint/ /opt/nemoclaw-generate-config.ts \
+      /opt/nemoclaw-zeroclaw-plugin/ 2>/dev/null || true
+
+USER sandbox
+
+# Set up blueprint for local resolution
+RUN mkdir -p /sandbox/.nemoclaw/blueprints/0.1.0 \
+    && cp -r /opt/nemoclaw-blueprint/* /sandbox/.nemoclaw/blueprints/0.1.0/
+
+# Generate ZeroClaw config.toml using Python.
+# TODO (LIVE TEST on Brev): The real Dockerfile uses:
+#   node --experimental-strip-types /opt/nemoclaw-generate-config.ts
+# which requires Node.js v22. The stub base ships Node.js v18 from the Ubuntu
+# 24.04 host which lacks --experimental-strip-types (added in v22). Python
+# generates equivalent TOML output for local testing purposes.
+RUN python3 - <<'PYEOF'
+import os, base64, json, pathlib, pwd
+
+model     = os.environ.get("NEMOCLAW_MODEL", "nvidia/llama-3.1-nemotron-70b-instruct")
+base_url  = os.environ.get("NEMOCLAW_INFERENCE_BASE_URL", "https://inference.local/v1")
+ch_b64    = os.environ.get("NEMOCLAW_MESSAGING_CHANNELS_B64", "W10=")
+ids_b64   = os.environ.get("NEMOCLAW_MESSAGING_ALLOWED_IDS_B64", "e30=")
+
+channels   = json.loads(base64.b64decode(ch_b64))
+allowed    = json.loads(base64.b64decode(ids_b64))
+TOKEN_ENVS = {"telegram": "TELEGRAM_BOT_TOKEN", "discord": "DISCORD_BOT_TOKEN", "slack": "SLACK_BOT_TOKEN"}
+
+# Use passwd lookup (same as Node.js os.homedir()) so $HOME env var (which
+# may be set to /root by the base image) does not affect the result.
+home       = pathlib.Path(pwd.getpwuid(os.getuid()).pw_dir)
+zc_dir     = home / ".zeroclaw"
+data_dir   = home / ".zeroclaw-data"
+
+lines = [
+    f'workspace_dir = "{data_dir}/workspace"',
+    f'config_path = "{zc_dir}/config.toml"',
+    'default_provider = "compatible"',
+    f'default_model = {json.dumps(model)}',
+    'default_temperature = 0.7',
+    "",
+    "# -- Gateway",
+    "[gateway]",
+    "port = 42617",
+    'host = "[::]"',
+    "allow_public_bind = true",
+    "require_pairing = false",
+    "",
+    "# -- Compatible (OpenAI-compatible) inference provider",
+    "[provider.compatible]",
+    f'base_url = {json.dumps(base_url)}',
+    'api_key = "openshell:resolve:env:NVIDIA_API_KEY"',
+    "",
+    "# -- NemoClaw WASM plugin",
+    "[plugins]",
+    "enabled = true",
+    f'plugins_dir = "{data_dir}/plugins"',
+]
+
+for ch in channels:
+    if ch in TOKEN_ENVS:
+        lines += [
+            "",
+            f"# -- {ch.capitalize()} channel",
+            f"[channel.{ch}]",
+            f'token = "openshell:resolve:env:{TOKEN_ENVS[ch]}"',
+        ]
+        ids = allowed.get(ch, [])
+        if ids:
+            lines.append(f"allowed_users = [{', '.join(str(i) for i in ids)}]")
+
+config_path = zc_dir / "config.toml"
+config_path.write_text("\n".join(lines) + "\n")
+config_path.chmod(0o600)
+print(f"[config] Wrote {config_path} (model={model}, provider=compatible, stub=true)")
+PYEOF
+
+# Install placeholder WASM plugin into ZeroClaw's plugin directory.
+# The stub zeroclaw ignores plugin loading; the file just needs to exist.
+RUN mkdir -p /sandbox/.zeroclaw-data/plugins/nemoclaw \
+    && cp /opt/nemoclaw-zeroclaw-plugin/nemoclaw.wasm \
+          /sandbox/.zeroclaw-data/plugins/nemoclaw/nemoclaw.wasm \
+    && cp /opt/nemoclaw-zeroclaw-plugin/manifest.toml \
+          /sandbox/.zeroclaw-data/plugins/nemoclaw/manifest.toml
+
+# Lock .zeroclaw config dir (same as real Dockerfile — start.sh requires this)
+# hadolint ignore=DL3002
+USER root
+RUN chown root:root /sandbox/.zeroclaw \
+    && find /sandbox/.zeroclaw -mindepth 1 -maxdepth 1 -exec chown -h root:root {} + \
+    && chmod 755 /sandbox/.zeroclaw \
+    && chmod 444 /sandbox/.zeroclaw/config.toml
+
+# Pin config hash (start.sh verifies this at container startup)
+RUN sha256sum /sandbox/.zeroclaw/config.toml \
+    > /sandbox/.zeroclaw/.config-hash \
+    && chmod 444 /sandbox/.zeroclaw/.config-hash \
+    && chown root:root /sandbox/.zeroclaw/.config-hash
+
+ENTRYPOINT ["/usr/local/bin/nemoclaw-start"]
+CMD ["/bin/bash"]

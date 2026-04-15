@@ -45,6 +45,8 @@ export interface AgentDefinition {
   expected_version?: string;
   gateway_command?: string;
   device_pairing?: boolean;
+  home_env_var?: string;
+  supports_skills?: boolean;
   phone_home_hosts?: string[];
   forward_ports?: number[];
   health_probe?: AgentHealthProbe;
@@ -62,6 +64,8 @@ export interface AgentDefinition {
   readonly versionCommand: string;
   readonly expectedVersion: string | null;
   readonly hasDevicePairing: boolean;
+  readonly homeEnvVar: string | null;
+  readonly supportsSkills: boolean;
   readonly phoneHomeHosts: string[];
   readonly messagingPlatforms: string[];
   readonly dockerfileBasePath: string | null;
@@ -162,6 +166,16 @@ export function loadAgent(name: string): AgentDefinition {
 
     get hasDevicePairing(): boolean {
       return raw.device_pairing === true;
+    },
+
+    get homeEnvVar(): string | null {
+      return (raw.home_env_var as string) || null;
+    },
+
+    get supportsSkills(): boolean {
+      // Default true — openclaw and hermes both support skills.
+      // Only agents that explicitly set supports_skills: false opt out.
+      return raw.supports_skills !== false;
     },
 
     get phoneHomeHosts(): string[] {

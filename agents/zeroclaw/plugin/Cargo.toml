@@ -1,0 +1,23 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2026 Jason Perlow. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "nemoclaw-zeroclaw-plugin"
+version = "1.0.0"
+edition = "2021"
+description = "NemoClaw sandbox tools for ZeroClaw (WASM plugin)"
+license = "Apache-2.0"
+
+[lib]
+name = "nemoclaw_zeroclaw_plugin"
+crate-type = ["cdylib"]
+
+[dependencies]
+extism-pdk = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+opt-level = "s"   # Optimize for size in WASM
+lto = true
+strip = true

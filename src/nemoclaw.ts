@@ -1064,9 +1064,13 @@ async function sandboxConnect(sandboxName, { dangerouslySkipPermissions = false 
   // ask "now what?" — see #465. Suppress the hint when stdout isn't a
   // TTY so scripted callers don't get noise in their pipelines.
   if (process.stdout.isTTY && !["1", "true"].includes(String(process.env.NEMOCLAW_NO_CONNECT_HINT || ""))) {
+    const _connectAgent = agentRuntime.getSessionAgent(sandboxName);
+    const connectHint = _connectAgent
+      ? `Connect an OpenAI-compatible client to http://localhost:${_connectAgent.forwardPort}/v1`
+      : "run `openclaw tui` to start chatting with the agent";
     console.log("");
     console.log(`  ${G}✓${R} Connecting to sandbox '${sandboxName}'`);
-    console.log(`  ${D}Inside the sandbox, run \`openclaw tui\` to start chatting with the agent.${R}`);
+    console.log(`  ${D}Inside the sandbox, ${connectHint}.${R}`);
     console.log(`  ${D}Type \`exit\` (or Ctrl-D) to return to the host shell.${R}`);
     console.log("");
   }
@@ -1395,8 +1399,13 @@ async function sandboxSkillInstall(sandboxName, args = []) {
   // 2. Ensure sandbox is live
   await ensureLiveSandboxOrExit(sandboxName);
 
-  // 3. Resolve agent and paths
+  // 3. Resolve agent and paths — bail early for agents that don't use the OpenClaw skill system
   const agent = agentRuntime.getSessionAgent(sandboxName);
+  if (agent && !agent.supportsSkills) {
+    console.error(`  ${agentRuntime.getAgentDisplayName(agent)} does not support the OpenClaw skill system.`);
+    console.error(`  This agent uses its own plugin format. See the agent documentation for details.`);
+    process.exit(1);
+  }
   const paths = skillInstall.resolveSkillPaths(agent, frontmatter.name);
 
   // 4. Get SSH config

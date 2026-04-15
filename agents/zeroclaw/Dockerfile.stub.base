@@ -1,0 +1,71 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2026 Jason Perlow. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# ZeroClaw sandbox BASE IMAGE — STUB variant for local installer testing.
+#
+# ┌─────────────────────────────────────────────────────────────────┐
+# │  STUB IMAGE — NOT FOR PRODUCTION                                │
+# │                                                                 │
+# │  This Dockerfile replaces the real Dockerfile.base for testing  │
+# │  on OmniStation where Docker Hub CDN and GitHub Releases CDN    │
+# │  are blocked.  It uses:                                         │
+# │    - nemoclaw-stub-rootfs:latest  (built by build-stub-images.sh│
+# │      from host Ubuntu 24.04 binaries via docker import)         │
+# │    - agents/zeroclaw/stub/zeroclaw  (Python HTTP health stub)   │
+# │    - agents/zeroclaw/stub/gosu      (no-op privilege-drop stub) │
+# │                                                                 │
+# │  TODO (LIVE TEST on Brev):                                      │
+# │    Delete this file and run the real Dockerfile.base which:     │
+# │    - Pulls node:22-slim from Docker Hub                         │
+# │    - Downloads zeroclaw binary from GitHub Releases             │
+# │    - Downloads gosu binary from GitHub Releases                 │
+# │    Test: nemoclaw onboard --agent zeroclaw (on Brev system)     │
+# └─────────────────────────────────────────────────────────────────┘
+#
+# Built by scripts/build-stub-images.sh — do not build directly.
+
+# hadolint ignore=DL3007
+FROM nemoclaw-stub-rootfs:latest
+
+LABEL io.nemoclaw.stub="true"
+LABEL io.nemoclaw.stub.reason="bypasses-docker-hub-and-github-releases-cdn"
+LABEL io.nemoclaw.stub.replace-with="agents/zeroclaw/Dockerfile.base"
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Copy stub zeroclaw and gosu from the repo
+# (These are already present in the rootfs imported by build-stub-images.sh,
+# but explicit COPY ensures the final image uses the repo-versioned stubs.)
+COPY agents/zeroclaw/stub/zeroclaw /usr/local/bin/zeroclaw
+COPY agents/zeroclaw/stub/gosu     /usr/local/bin/gosu
+RUN chmod 755 /usr/local/bin/zeroclaw /usr/local/bin/gosu
+
+# Create sandbox user (matches OpenShell convention) and gateway user.
+# Same UID/GID layout as the real Dockerfile.base — OpenShell expects these names.
+RUN groupadd -r gateway \
+    && useradd -r -g gateway -d /sandbox -s /usr/sbin/nologin gateway \
+    && groupadd -r sandbox \
+    && useradd -r -g sandbox -d /sandbox -s /bin/bash sandbox \
+    && mkdir -p /sandbox/.nemoclaw \
+    && chown -R sandbox:sandbox /sandbox
+
+# Split .zeroclaw into immutable config dir + writable state dir.
+# Same symlink layout as the real image — start.sh validates these at startup.
+RUN mkdir -p \
+        /sandbox/.zeroclaw-data/workspace \
+        /sandbox/.zeroclaw-data/memory \
+        /sandbox/.zeroclaw-data/channels_config \
+        /sandbox/.zeroclaw-data/cron \
+        /sandbox/.zeroclaw-data/logs \
+        /sandbox/.zeroclaw-data/plugins \
+        /sandbox/.zeroclaw-data/cache \
+    && mkdir -p /sandbox/.zeroclaw \
+    && ln -s /sandbox/.zeroclaw-data/workspace      /sandbox/.zeroclaw/workspace \
+    && ln -s /sandbox/.zeroclaw-data/memory         /sandbox/.zeroclaw/memory \
+    && ln -s /sandbox/.zeroclaw-data/channels_config /sandbox/.zeroclaw/channels_config \
+    && ln -s /sandbox/.zeroclaw-data/cron           /sandbox/.zeroclaw/cron \
+    && ln -s /sandbox/.zeroclaw-data/logs           /sandbox/.zeroclaw/logs \
+    && ln -s /sandbox/.zeroclaw-data/plugins        /sandbox/.zeroclaw/plugins \
+    && ln -s /sandbox/.zeroclaw-data/cache          /sandbox/.zeroclaw/cache \
+    && chown -R sandbox:sandbox /sandbox/.zeroclaw /sandbox/.zeroclaw-data

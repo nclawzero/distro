@@ -1,0 +1,33 @@
+#!/bin/bash
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2026 Jason Perlow. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# STUB: Fake gosu for local installer testing on OmniStation.
+#
+# Real gosu drops privileges to the specified user before exec-ing the command.
+# This stub ignores the user argument and exec's the command directly, which is
+# acceptable for local testing where privilege separation is not exercised.
+#
+# Usage (same interface as real gosu):
+#   gosu <user> <command> [args...]
+#
+# ┌─────────────────────────────────────────────────────────────────┐
+# │  TODO (LIVE TEST on Brev):                                      │
+# │  The real zeroclaw-sandbox-base image pulls gosu from GitHub    │
+# │  Releases and verifies its SHA256 checksum. This stub is only   │
+# │  present in images built by scripts/build-stub-images.sh.       │
+# └─────────────────────────────────────────────────────────────────┘
+
+set -euo pipefail
+
+# Require at least two arguments: <user> <command>
+if [ "$#" -lt 2 ]; then
+  echo "gosu stub: usage: gosu <user> <command> [args...]" >&2
+  exit 1
+fi
+
+# Drop the <user> argument — stub does not switch users
+shift
+
+exec "$@"

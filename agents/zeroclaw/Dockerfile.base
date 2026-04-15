@@ -1,0 +1,105 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2026 Jason Perlow. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# ZeroClaw sandbox base image — expensive, rarely-changing layers.
+#
+# Contains: node:22-slim (OpenShell needs Node), apt packages, gosu,
+# user/group setup, .zeroclaw directory structure, and ZeroClaw binary.
+#
+# ZeroClaw is a compiled Rust binary with no runtime language deps —
+# much leaner than the Hermes (Python) base, but we still need a build
+# stage to compile it from source.
+#
+# ── When to rebuild ─────────────────────────────────────────────
+#   1. ZeroClaw version bump      — change ZEROCLAW_VERSION below
+#   2. New apt package needed     — add it to the apt-get install list
+#   3. gosu upgrade               — update URL, checksum, and version
+#   4. node:22-slim digest rot    — update-docker-pin.sh updates both
+#   5. New .zeroclaw subdirectory — add mkdir + symlink below
+# ────────────────────────────────────────────────────────────────
+
+# ── Stage 1: Download ZeroClaw pre-built binary ────────────────
+# ZeroClaw publishes pre-built binaries for amd64/arm64 on every release.
+# Using released binaries is faster and more reproducible than building
+# from source. SHA256 verified against the upstream SHA256SUMS file.
+FROM node:22-slim@sha256:4f77a690f2f8946ab16fe1e791a3ac0667ae1c3575c3e4d0d4589e9ed5bfaf3d AS zeroclaw-downloader
+
+ARG ZEROCLAW_VERSION=v0.6.9
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        curl=7.88.1-10+deb12u14 \
+        ca-certificates=20230311+deb12u1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# hadolint ignore=DL4006,DL3003
+RUN arch="$(dpkg --print-architecture)" \
+    && case "$arch" in \
+        amd64) zc_triple="x86_64-unknown-linux-gnu" ;; \
+        arm64) zc_triple="aarch64-unknown-linux-gnu" ;; \
+        *) echo "Unsupported architecture: $arch" >&2; exit 1 ;; \
+    esac \
+    && base_url="https://github.com/zeroclaw-labs/zeroclaw/releases/download/${ZEROCLAW_VERSION}" \
+    && curl -fsSL -o "/tmp/zeroclaw-${zc_triple}.tar.gz" "${base_url}/zeroclaw-${zc_triple}.tar.gz" \
+    && curl -fsSL -o /tmp/SHA256SUMS "${base_url}/SHA256SUMS" \
+    && cd /tmp && grep "zeroclaw-${zc_triple}.tar.gz" SHA256SUMS | sha256sum -c - \
+    && tar -C /usr/local/bin -xzf "/tmp/zeroclaw-${zc_triple}.tar.gz" zeroclaw \
+    && chmod +x /usr/local/bin/zeroclaw \
+    && zeroclaw --version
+
+# ── Stage 2: Runtime base ──────────────────────────────────────
+FROM node:22-slim@sha256:4f77a690f2f8946ab16fe1e791a3ac0667ae1c3575c3e4d0d4589e9ed5bfaf3d
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+COPY --from=zeroclaw-downloader /usr/local/bin/zeroclaw /usr/local/bin/zeroclaw
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        curl=7.88.1-10+deb12u14 \
+        git=1:2.39.5-0+deb12u3 \
+        ca-certificates=20230311+deb12u1 \
+        iproute2=6.1.0-3 \
+        iptables=1.8.9-2 \
+        libcap2-bin=1:2.66-4+deb12u2+b2 \
+    && rm -rf /var/lib/apt/lists/*
+
+# gosu for privilege separation (gateway vs sandbox user).
+# Identical to Hermes base — pinned to 1.19 with checksum.
+# hadolint ignore=DL4006
+RUN arch="$(dpkg --print-architecture)" \
+    && case "$arch" in \
+        amd64) gosu_asset="gosu-amd64"; gosu_sha256="52c8749d0142edd234e9d6bd5237dff2d81e71f43537e2f4f66f75dd4b243dd0" ;; \
+        arm64) gosu_asset="gosu-arm64"; gosu_sha256="3a8ef022d82c0bc4a98bcb144e77da714c25fcfa64dccc57f6aba7ae47ff1a44" ;; \
+        *) echo "Unsupported architecture for gosu: $arch" >&2; exit 1 ;; \
+    esac \
+    && curl -fsSL -o /usr/local/bin/gosu "https://github.com/tianon/gosu/releases/download/1.19/${gosu_asset}" \
+    && echo "${gosu_sha256}  /usr/local/bin/gosu" | sha256sum -c - \
+    && chmod +x /usr/local/bin/gosu \
+    && gosu --version
+
+# Create sandbox user (matches OpenShell convention) and gateway user.
+# Same UID/GID layout as Hermes — OpenShell expects these names.
+RUN groupadd -r gateway && useradd -r -g gateway -d /sandbox -s /usr/sbin/nologin gateway \
+    && groupadd -r sandbox && useradd -r -g sandbox -d /sandbox -s /bin/bash sandbox \
+    && mkdir -p /sandbox/.nemoclaw \
+    && chown -R sandbox:sandbox /sandbox
+
+# Split .zeroclaw into immutable config dir + writable state dir.
+# Same pattern as Hermes: Landlock makes /sandbox/.zeroclaw read-only,
+# writable state lives in .zeroclaw-data, reached via symlinks.
+RUN mkdir -p /sandbox/.zeroclaw-data/workspace \
+        /sandbox/.zeroclaw-data/memory \
+        /sandbox/.zeroclaw-data/channels_config \
+        /sandbox/.zeroclaw-data/cron \
+        /sandbox/.zeroclaw-data/logs \
+        /sandbox/.zeroclaw-data/plugins \
+        /sandbox/.zeroclaw-data/cache \
+    && mkdir -p /sandbox/.zeroclaw \
+    && ln -s /sandbox/.zeroclaw-data/workspace     /sandbox/.zeroclaw/workspace \
+    && ln -s /sandbox/.zeroclaw-data/memory        /sandbox/.zeroclaw/memory \
+    && ln -s /sandbox/.zeroclaw-data/channels_config /sandbox/.zeroclaw/channels_config \
+    && ln -s /sandbox/.zeroclaw-data/cron          /sandbox/.zeroclaw/cron \
+    && ln -s /sandbox/.zeroclaw-data/logs          /sandbox/.zeroclaw/logs \
+    && ln -s /sandbox/.zeroclaw-data/plugins       /sandbox/.zeroclaw/plugins \
+    && ln -s /sandbox/.zeroclaw-data/cache         /sandbox/.zeroclaw/cache \
+    && chown -R sandbox:sandbox /sandbox/.zeroclaw /sandbox/.zeroclaw-data

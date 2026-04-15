@@ -8,10 +8,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 sys.path.insert(0, str(Path(__file__).parent / "_ext"))
 
-project = "NVIDIA NemoClaw Developer Guide"
+project = "nclawzero Developer Guide"
 this_year = date.today().year
-copyright = f"{this_year}, NVIDIA Corporation"
-author = "NVIDIA Corporation"
+copyright = f"{this_year}, Jason Perlow (based on NVIDIA NemoClaw)"
+author = "Jason Perlow"
 release = "latest"
 
 extensions = [

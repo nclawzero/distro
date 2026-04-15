@@ -1,15 +1,17 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-# Build and push the sandbox base image to GHCR.
+# Build and push sandbox base images to GHCR.
 #
 # Triggers:
-#   - Push to main when Dockerfile.base or the blueprint minimum version changes
+#   - Push to main when a Dockerfile.base or the blueprint minimum version changes
 #   - Manual dispatch for ad-hoc rebuilds
 #
-# The base image contains the expensive, rarely-changing layers (apt, gosu,
-# user setup, openclaw CLI). The production Dockerfile layers PR-specific
-# code on top via: FROM ghcr.io/nvidia/nemoclaw/sandbox-base:<tag>
+# Each agent ships a Dockerfile.base containing expensive, rarely-changing
+# layers (apt packages, gosu, user setup, agent binary). The production
+# Dockerfile for each agent layers PR-specific code on top:
+#   FROM ghcr.io/nvidia/nemoclaw/sandbox-base:<tag>         (openclaw)
+#   FROM ghcr.io/nvidia/nemoclaw/zeroclaw-sandbox-base:<tag> (zeroclaw)
 
 name: base-image
 
@@ -20,10 +22,15 @@ on:
       - "Dockerfile.base"
       # Dockerfile.base validates min_openclaw_version from this file at build time.
       - "nemoclaw-blueprint/blueprint.yaml"
+      - "agents/zeroclaw/Dockerfile.base"
   workflow_dispatch:
     inputs:
       openclaw_version:
         description: "OpenClaw version to install (leave blank to use the default in Dockerfile.base)"
+        required: false
+        default: ""
+      zeroclaw_version:
+        description: "ZeroClaw version to install (leave blank to use the default in agents/zeroclaw/Dockerfile.base)"
         required: false
         default: ""
 
@@ -37,13 +44,14 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: nvidia/nemoclaw/sandbox-base
 
 jobs:
-  build-and-push:
+  build-openclaw-base:
     if: github.repository == 'NVIDIA/NemoClaw'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      IMAGE_NAME: nvidia/nemoclaw/sandbox-base
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -87,3 +95,53 @@ jobs:
           cache-to: type=gha,mode=max
           build-args: |
             ${{ inputs.openclaw_version && format('OPENCLAW_VERSION={0}', inputs.openclaw_version) || '' }}
+
+  build-zeroclaw-base:
+    if: github.repository == 'NVIDIA/NemoClaw'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      IMAGE_NAME: nvidia/nemoclaw/zeroclaw-sandbox-base
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up QEMU (arm64 emulation)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=,format=short
+
+      - name: Validate ZeroClaw version input
+        if: inputs.zeroclaw_version != ''
+        run: echo "${{ inputs.zeroclaw_version }}" | grep -qxE 'v[0-9]+\.[0-9]+\.[0-9]+'
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: agents/zeroclaw/Dockerfile.base
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            ${{ inputs.zeroclaw_version && format('ZEROCLAW_VERSION={0}', inputs.zeroclaw_version) || '' }}

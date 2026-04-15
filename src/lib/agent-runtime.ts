@@ -59,12 +59,14 @@ export function buildRecoveryScript(agent: AgentDefinition | null): string | nul
   const probeUrl = getHealthProbeUrl(agent);
   const binaryPath = agent.binary_path || "/usr/local/bin/openclaw";
   const gatewayCmd = agent.gateway_command || "openclaw gateway run";
-  const isHermes = agent.name === "hermes";
-  const hermesHome = isHermes ? "export HERMES_HOME=/sandbox/.hermes-data; " : "";
+  const homeExport =
+    agent.homeEnvVar && agent.configPaths.writableDir
+      ? `export ${agent.homeEnvVar}=${agent.configPaths.writableDir}; `
+      : "";
 
   return [
     "[ -f ~/.bashrc ] && . ~/.bashrc 2>/dev/null;",
-    hermesHome,
+    homeExport,
     `if curl -sf --max-time 3 ${shellQuote(probeUrl)} > /dev/null 2>&1; then echo ALREADY_RUNNING; exit 0; fi;`,
     "rm -f /tmp/gateway.log;",
     "touch /tmp/gateway.log; chmod 600 /tmp/gateway.log;",

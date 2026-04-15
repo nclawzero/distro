@@ -14,6 +14,7 @@ function runShell(script, env = {}) {
   return spawnSync("bash", ["-lc", script], {
     cwd: path.join(import.meta.dirname, ".."),
     encoding: "utf-8",
+    timeout: 15000,
     env: { ...process.env, ...env },
   });
 }
