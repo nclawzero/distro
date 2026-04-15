@@ -1322,11 +1322,17 @@ async function sandboxSkillInstall(sandboxName, args = []) {
   const sub = args[0];
   if (!sub || sub === "help" || sub === "--help" || sub === "-h") {
     console.log("");
-    console.log("  Usage: nemoclaw <sandbox> skill install <path>");
+    console.log("  Usage: nemoclaw <sandbox> skill install <source>");
     console.log("");
-    console.log("  Deploy a skill directory to a running sandbox.");
-    console.log("  <path> must be a skill directory containing a SKILL.md (with 'name:' frontmatter),");
-    console.log("  or a direct path to a SKILL.md file. All non-dot files in the directory are uploaded.");
+    console.log("  Install a skill into a running sandbox.");
+    console.log("");
+    console.log("  Sources:");
+    console.log("    <path>              Local directory containing SKILL.md, or direct path to SKILL.md");
+    console.log("    clawhub:<name>      Install from ClawHub registry (e.g. clawhub:weather)");
+    console.log("    https://clawhub.ai/skills/<name>  Install from ClawHub URL");
+    console.log("    https://github.com/...             Install from GitHub repo");
+    console.log("");
+    console.log("  ClawHub and git sources are delegated to the agent's built-in skill installer.");
     console.log("");
     return;
   }
@@ -1341,13 +1347,64 @@ async function sandboxSkillInstall(sandboxName, args = []) {
   const extraArgs = args.slice(2);
   if (extraArgs.length > 0) {
     console.error(`  Unknown argument(s) for skill install: ${extraArgs.join(", ")}`);
-    console.error("  Usage: nemoclaw <sandbox> skill install <path>");
+    console.error("  Usage: nemoclaw <sandbox> skill install <source>");
+    console.error("  <source> can be a local path, clawhub:<name>, or a ClawHub URL.");
     process.exit(1);
   }
   if (!skillPath) {
-    console.error("  Usage: nemoclaw <sandbox> skill install <path>");
-    console.error("  <path> must be a directory containing a SKILL.md file.");
+    console.error("  Usage: nemoclaw <sandbox> skill install <source>");
+    console.error("  <source> can be:");
+    console.error("    - A local directory containing SKILL.md");
+    console.error("    - clawhub:<name>  (e.g. clawhub:weather)");
+    console.error("    - https://clawhub.ai/skills/<name>");
     process.exit(1);
+  }
+
+  // ── ClawHub / remote source: delegate to zeroclaw skills install ──
+  const isClawHub = skillPath.startsWith("clawhub:") || skillPath.includes("clawhub.ai/");
+  const isGitSource = skillPath.startsWith("https://github.com/") || skillPath.startsWith("git@");
+  if (isClawHub || isGitSource) {
+    const agent = agentRuntime.getSessionAgent(sandboxName);
+    if (agent && agent.name !== "openclaw") {
+      // Non-OpenClaw agent: delegate to the agent's own skill installer
+      // inside the sandbox via SSH
+      await ensureLiveSandboxOrExit(sandboxName);
+      const sshConfigResult = captureOpenshell(["sandbox", "ssh-config", sandboxName], {
+        ignoreError: true,
+      });
+      if (sshConfigResult.status !== 0) {
+        console.error("  Failed to obtain SSH configuration for the sandbox.");
+        process.exit(1);
+      }
+      const tmpSshConfig = path.join(os.tmpdir(), `nemoclaw-ssh-skill-${process.pid}-${Date.now()}.conf`);
+      fs.writeFileSync(tmpSshConfig, sshConfigResult.output, { mode: 0o600 });
+      try {
+        const ctx = { configFile: tmpSshConfig, sandboxName };
+        const binaryName = agent.binary_path ? path.basename(agent.binary_path) : agent.name;
+        const installCmd = `${binaryName} skills install ${shellQuote(skillPath)}`;
+        console.log(`  ${D}Delegating to ${agent.name} skill installer: ${installCmd}${R}`);
+        const result = skillInstall.sshExec(ctx, installCmd, { timeout: 60_000 });
+        if (result && result.stdout) console.log(result.stdout);
+        if (result && result.stderr) console.error(result.stderr);
+        if (!result || result.status !== 0) {
+          console.error(`  Skill install failed (exit ${result?.status ?? "null"}).`);
+          process.exit(1);
+        }
+        console.log(`  ${G}✓${R} Skill installed via ${agent.name}`);
+      } finally {
+        try { fs.unlinkSync(tmpSshConfig); } catch { /* ignore */ }
+      }
+      return;
+    }
+    // OpenClaw: fall through to the existing local-path logic.
+    // OpenClaw doesn't have a built-in ClawHub client, so remote
+    // sources would need to be downloaded locally first. For now,
+    // tell the user to use the local path instead.
+    if (isClawHub || isGitSource) {
+      console.error(`  Remote skill sources (clawhub:, git) require a non-OpenClaw agent.`);
+      console.error(`  Download the skill locally first, then install from the local path.`);
+      process.exit(1);
+    }
   }
 
   const resolvedPath = path.resolve(skillPath);
