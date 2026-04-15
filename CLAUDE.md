@@ -7,7 +7,7 @@
 
 ## Project Overview
 
-nclawzero is a personal project that runs ZeroClaw agents inside OpenShell sandboxes. Forked from NVIDIA NemoClaw but independently maintained. It provides CLI tooling, a blueprint for sandbox orchestration, and security hardening.
+nclawzero is a research project exploring how to run ZeroClaw agents inside OpenShell sandboxes on memory-constrained and resource-constrained devices for edge and embedded deployments. Forked from NVIDIA NemoClaw but independently maintained. It provides CLI tooling, a blueprint for sandbox orchestration, and security hardening.
 
 **Status:** Alpha (March 2026+). Interfaces may change without notice.
 
@@ -270,14 +270,12 @@ The stub-based local installer flow has been tested end-to-end on OmniStation. T
 On any system with full internet access:
 
 ```bash
-# Option 1: fresh system, clones from GitHub
-bash <(curl -fsSL https://raw.githubusercontent.com/perlowjanv/nclawzero/nemoclawzero/scripts/zeroclaw-e2e.sh)
+# Option 1: from an existing local checkout
+scripts/zeroclaw-e2e.sh --repo /path/to/nclawzero
 
-# Option 2: from an existing local checkout
-scripts/zeroclaw-e2e.sh --repo /path/to/nemoclaw
-
-# Option 3: private repo without SSH keys
-scripts/zeroclaw-e2e.sh --token <github-pat>
+# Option 2: clone from ARGONAS first
+git clone root@192.168.207.101:/mnt/datapool/git/nclawzero.git
+cd nclawzero && scripts/zeroclaw-e2e.sh --repo .
 ```
 
 Results are written to `/tmp/zeroclaw-e2e-results.txt` and printed to stdout.
@@ -298,22 +296,23 @@ curl http://localhost:42617/health
 
 ### OmniStation-Specific Gotchas
 
-- **git push returns HTTP 503** — HTTPS to non-NVIDIA repos is blocked. Use the GitHub REST API to push: blob → tree → commit → `PATCH /refs/heads/{branch}`.
 - **`brev register` requires sudo + Entra ID Hello PIN (PAM)** — non-interactive device registration is not possible. `brev exec` and `brev copy` will not work from OmniStation. Use the browser-based terminal at brev.nvidia.com instead, or run E2E from a registered workstation.
 - **Docker Hub / GitHub Releases CDN blocked** — use stub images for local testing; real images require an external system.
-- **`api.github.com` is reachable** — GitHub REST API pushes work fine.
 - **`brev ls` and `brev healthcheck` work** — brev API is reachable; only SSH-based operations (exec, copy, port-forward) are blocked.
 
 ---
 
-## Branch / Fork Topology
+## Repository Topology
 
 ```text
-NVIDIA/NemoClaw (origin/main)       — upstream, PR target
-  └── perlowjanv/nclawzero        — working fork, branch: nemoclawzero
-        └── zeroclaw agent work lives here
+NVIDIA/NemoClaw (upstream)           — reference upstream
+ARGONAS bare repo                    — LAN source of truth
+  /mnt/datapool/git/nclawzero.git
+     ↕ origin (SSH)
+  zeropi (.56) ~/nclawzero           — min footprint test target
+  clawpi (.54) ~/nclawzero           — full-featured test target
 ```
 
-- **PR to `NVIDIA/NemoClaw` is blocked** — contributor access not yet granted to <jperlow@nvidia.com>.
-- All ZeroClaw development is on `perlowjanv:nemoclawzero`. Push there until the PR path opens.
-- The local git history on any given workstation may have **different commit SHAs** than GitHub for the same content. This happens when commits are created via the GitHub REST API (different timestamp → different SHA) rather than `git push`. Always treat `perlowjanv/nclawzero` on GitHub as the source of truth; rebase local history on top of it with `git fetch perlowjanv && git reset --hard perlowjanv/nclawzero` if needed.
+GitLab mirror: https://gitlab-master.nvidia.com/jperlow/nclawzero
+
+All development is on the `nemoclawzero` branch. Push to ARGONAS, sync to GitLab as needed.

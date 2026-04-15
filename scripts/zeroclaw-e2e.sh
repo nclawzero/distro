@@ -20,7 +20,7 @@
 #   --results PATH   Results file path (default: /tmp/zeroclaw-e2e-results.txt)
 #
 # One-liner (fresh system, public repo):
-#   bash <(curl -fsSL https://raw.githubusercontent.com/perlowjanv/nclawzero/nemoclawzero/scripts/zeroclaw-e2e.sh)
+#   bash <(curl -fsSL scripts/zeroclaw-e2e.sh (from ARGONAS clone))
 #
 # From a local checkout:
 #   scripts/zeroclaw-e2e.sh --repo /path/to/nemoclaw
@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # ── Defaults ──────────────────────────────────────────────────────
-REPO_URL="https://github.com/perlowjanv/nclawzero.git"
+REPO_URL="root@192.168.207.101:/mnt/datapool/git/nclawzero.git"
 BRANCH="nemoclawzero"
 REPO_PATH=""    # set via --repo; empty means clone
 GITHUB_TOKEN="" # set via --token; needed for private repos
@@ -176,7 +176,7 @@ else
   # Set auth header if token provided
   CLONE_URL="$REPO_URL"
   if [ -n "$GITHUB_TOKEN" ]; then
-    CLONE_URL="https://${GITHUB_TOKEN}@github.com/perlowjanv/nclawzero.git"
+    CLONE_URL="root@192.168.207.101:/mnt/datapool/git/nclawzero.git"
   fi
 
   if [ -d "${WORK_DIR}/.git" ]; then

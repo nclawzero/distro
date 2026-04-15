@@ -9,11 +9,9 @@
 [![ZeroClaw](https://img.shields.io/badge/ZeroClaw-0.6.9-green)](https://github.com/zeroclaw-labs/zeroclaw/releases/tag/v0.6.9)
 [![Harness](https://img.shields.io/badge/tests-25%2F25%20passed-brightgreen)](#test-results)
 
-**nclawzero** is a personal, experimental project that runs [ZeroClaw](https://github.com/zeroclaw-labs/zeroclaw) agents inside hardened [OpenShell](https://github.com/NVIDIA/OpenShell) sandboxes. It started as a fork of [NVIDIA NemoClaw](https://github.com/NVIDIA/NemoClaw) but has diverged significantly — ZeroClaw replaces OpenClaw as the primary agent runtime, and the sandbox tooling, config generation, provider routing, and test harnesses are independently developed.
+**nclawzero** is a research project exploring how to run [ZeroClaw](https://github.com/zeroclaw-labs/zeroclaw) agents inside hardened [OpenShell](https://github.com/NVIDIA/OpenShell) sandboxes on memory-constrained and resource-constrained devices for edge and embedded deployments. It started as a fork of [NVIDIA NemoClaw](https://github.com/NVIDIA/NemoClaw) but has diverged significantly — ZeroClaw replaces OpenClaw as the primary agent runtime, and the sandbox tooling, config generation, provider routing, and test harnesses are independently developed.
 
-> **Not affiliated with or endorsed by NVIDIA.** This is a personal project by Jason Perlow. NemoClaw is referenced only as the upstream codebase this was originally forked from. NVIDIA has no involvement in the development, testing, or maintenance of nclawzero.
-
-> **Experimental software** — not production-ready. Use at your own risk. No support channel, SLA, or guarantee of compatibility with future upstream releases.
+> **Experimental research software** — not production-ready. Use at your own risk. No support channel, SLA, or guarantee of compatibility with future upstream releases.
 
 ## What nclawzero does
 
@@ -61,7 +59,7 @@
 ### Build the ZeroClaw sandbox image
 
 ```bash
-git clone --branch nemoclawzero https://github.com/perlowjanv/nclawzero.git
+git clone --branch nemoclawzero root@192.168.207.101:/mnt/datapool/git/nclawzero.git
 cd nclawzero
 
 # Build the base image (downloads ZeroClaw v0.6.9 binary)

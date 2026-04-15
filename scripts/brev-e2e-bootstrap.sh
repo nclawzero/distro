@@ -10,7 +10,7 @@
 #
 # What it does:
 #   1. Installs Docker + Node.js v22 if not present
-#   2. Clones (or updates) perlowjanv/nclawzero branch
+#   2. Clones (or updates) nclawzero (ARGONAS) branch
 #   3. Builds the REAL ZeroClaw sandbox images (pulls node:22-slim from
 #      Docker Hub, downloads zeroclaw binary from GitHub Releases)
 #   4. Starts the ZeroClaw container and verifies GET /health → {"status":"ok"}
@@ -25,7 +25,7 @@
 
 set -euo pipefail
 
-REPO_URL="https://github.com/perlowjanv/nclawzero.git"
+REPO_URL="root@192.168.207.101:/mnt/datapool/git/nclawzero.git"
 BRANCH="nemoclawzero"
 WORK_DIR="${HOME}/nemoclaw-e2e"
 RESULTS_FILE="/tmp/nemoclaw-e2e-results.txt"
@@ -89,7 +89,7 @@ if [ "$NODE_OK" = false ]; then
 fi
 
 # ── 3. Clone / update repo ────────────────────────────────────────
-step "Cloning/updating perlowjanv/nclawzero branch"
+step "Cloning/updating nclawzero (ARGONAS) branch"
 if [ -d "${WORK_DIR}/.git" ]; then
   git -C "$WORK_DIR" fetch origin "$BRANCH" --quiet
   git -C "$WORK_DIR" checkout "$BRANCH" --quiet

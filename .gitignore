@@ -46,3 +46,4 @@ secrets.json
 secrets.yaml
 service-account*.json
 token.json
+agent-sdk-activity.log

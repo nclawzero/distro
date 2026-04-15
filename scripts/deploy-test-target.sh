@@ -12,7 +12,7 @@
 # What it does:
 #   1. Connects to the target (or runs locally)
 #   2. Installs Docker + Node.js 22 if missing
-#   3. Clones/updates perlowjanv/nclawzero
+#   3. Clones/updates nclawzero (ARGONAS)
 #   4. Runs the full ZeroClaw E2E test suite
 #   5. Copies results back to the invoking machine
 #
@@ -67,7 +67,7 @@ USE_STUB=false
 KEEP_CONTAINER=false
 VERBOSE=false
 
-REPO_URL="https://github.com/perlowjanv/nclawzero.git"
+REPO_URL="root@192.168.207.101:/mnt/datapool/git/nclawzero.git"
 REMOTE_WORK_DIR="\$HOME/nemoclaw-e2e"
 REMOTE_RESULTS="/tmp/zeroclaw-e2e-results.txt"
 
@@ -244,7 +244,7 @@ step "Setting up repository on target"
 CLONE_CMD="REPO_URL='${REPO_URL}' BRANCH='${BRANCH}'"
 if [[ -n "$GITHUB_TOKEN" ]]; then
   # Inject token into HTTPS URL for private repo access
-  CLONE_CMD="REPO_URL='https://${GITHUB_TOKEN}@github.com/perlowjanv/nclawzero.git' BRANCH='${BRANCH}'"
+  CLONE_CMD="REPO_URL='root@192.168.207.101:/mnt/datapool/git/nclawzero.git' BRANCH='${BRANCH}'"
 fi
 
 run_remote "$(
