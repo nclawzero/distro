@@ -40,9 +40,10 @@ function listMarkdownFiles(root) {
 
 describe("repo skill markdown files", () => {
   const markdownFiles = listMarkdownFiles(skillsRoot);
-  const generatedUserSkillFiles = markdownFiles.filter((file) =>
-    path.relative(skillsRoot, file).startsWith("nemoclaw-user-"),
-  );
+  const generatedUserSkillFiles = markdownFiles.filter((file) => {
+    const rel = path.relative(skillsRoot, file);
+    return rel.startsWith("nemoclaw-user-") || rel.startsWith("nclawzero-");
+  });
 
   it("finds generated user skill markdown files to validate", () => {
     expect(generatedUserSkillFiles.length).toBeGreaterThan(0);
