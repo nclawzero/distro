@@ -15,6 +15,7 @@ import type { Dirent } from "node:fs";
 import {
   cpSync,
   existsSync,
+  lstatSync,
   mkdirSync,
   readdirSync,
   readFileSync,
@@ -22,7 +23,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { homedir } from "node:os";
-import { join, relative } from "node:path";
+import { join, relative, resolve } from "node:path";
 
 import { execa } from "execa";
 
@@ -39,13 +40,19 @@ function compactTimestamp(): string {
 }
 
 function collectFiles(dir: string): string[] {
+  const root = resolve(dir);
   const files: string[] = [];
   const walk = (current: string): void => {
     for (const entry of readdirSync(current, { withFileTypes: true })) {
       const full = join(current, entry.name);
+      // Security: skip symlinks to prevent traversal attacks (e.g., symlink → /etc/shadow)
+      if (entry.isSymbolicLink()) continue;
       if (entry.isDirectory()) {
         walk(full);
       } else if (entry.isFile()) {
+        // Validate the resolved path stays within the root directory
+        const resolved = resolve(full);
+        if (!resolved.startsWith(root)) continue;
         files.push(relative(dir, full));
       }
     }
@@ -64,6 +71,8 @@ export function createSnapshot(): string | null {
   mkdirSync(snapshotDir, { recursive: true });
 
   const dest = join(snapshotDir, "openclaw");
+  // Security: verify source is a real directory, not a symlink pointing elsewhere
+  assertNotSymlink(OPENCLAW_DIR, "snapshot source");
   cpSync(OPENCLAW_DIR, dest, { recursive: true });
 
   const contents = collectFiles(dest);
@@ -149,6 +158,10 @@ export function rollbackFromSnapshot(snapshotDir: string): boolean {
     return false;
   }
 
+  // Security: verify restore source is a real directory, not a symlink.
+  // Must be outside the try/catch so symlink attacks aren't silently swallowed.
+  assertNotSymlink(source, "rollback source");
+
   const archivePath = existsSync(OPENCLAW_DIR)
     ? join(HOME, `.openclaw.nemoclaw-archived.${compactTimestamp()}`)
     : null;
@@ -165,6 +178,23 @@ export function rollbackFromSnapshot(snapshotDir: string): boolean {
       renameSync(archivePath, OPENCLAW_DIR);
     }
     return false;
+  }
+}
+
+/**
+ * Security: reject paths that are symlinks to prevent traversal attacks.
+ * A symlinked .openclaw directory could point to /etc or other sensitive paths,
+ * causing cpSync to copy arbitrary system files into snapshots.
+ */
+function assertNotSymlink(targetPath: string, label: string): void {
+  try {
+    const stat = lstatSync(targetPath);
+    if (stat.isSymbolicLink()) {
+      throw new Error(`${label} is a symbolic link — refusing to proceed for security`);
+    }
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("symbolic link")) throw err;
+    // lstat failed for other reasons (e.g., path doesn't exist) — let the caller handle it
   }
 }
 

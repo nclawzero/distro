@@ -13,8 +13,9 @@ import {
 } from "./config.js";
 
 // Mock node:fs so tests don't touch the real filesystem.
-// The config module uses: existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync.
+// The config module uses: existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync, chmodSync.
 const store = new Map<string, string>();
+const lastWriteOptions = new Map<string, Record<string, unknown>>();
 
 vi.mock("node:fs", async (importOriginal) => {
   const original = await importOriginal();
@@ -27,9 +28,11 @@ vi.mock("node:fs", async (importOriginal) => {
       if (content === undefined) throw new Error(`ENOENT: ${p}`);
       return content;
     },
-    writeFileSync: (p: string, data: string) => {
+    writeFileSync: (p: string, data: string, options?: Record<string, unknown>) => {
       store.set(p, data);
+      if (options) lastWriteOptions.set(p, options);
     },
+    chmodSync: vi.fn(),
     unlinkSync: (p: string) => {
       store.delete(p);
     },
@@ -136,6 +139,22 @@ describe("onboard/config", () => {
       saveOnboardConfig(config);
       const loaded = loadOnboardConfig();
       expect(loaded).toEqual(config);
+    });
+
+    it("writes config file with mode 0o600 (owner read/write only)", () => {
+      const config = makeConfig();
+      saveOnboardConfig(config);
+      const configPath = `${process.env.HOME ?? "/tmp"}/.nemoclaw/config.json`;
+      const opts = lastWriteOptions.get(configPath);
+      expect(opts).toBeDefined();
+      expect(opts?.mode).toBe(0o600);
+    });
+
+    it("calls chmodSync as belt-and-suspenders permission enforcement", async () => {
+      const { chmodSync } = await import("node:fs");
+      const config = makeConfig();
+      saveOnboardConfig(config);
+      expect(chmodSync).toHaveBeenCalled();
     });
   });
 

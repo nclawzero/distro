@@ -8,7 +8,7 @@ const SNAP = "/snap/20260323";
 // ── In-memory filesystem ────────────────────────────────────────
 
 interface FsEntry {
-  type: "file" | "dir";
+  type: "file" | "dir" | "symlink";
   content?: string;
 }
 
@@ -33,6 +33,15 @@ vi.mock("node:fs", async (importOriginal) => {
   return {
     ...original,
     existsSync: (p: string) => store.has(p),
+    lstatSync: (p: string) => {
+      const entry = store.get(p);
+      if (!entry) throw new Error(`ENOENT: ${p}`);
+      return {
+        isSymbolicLink: () => entry.type === "symlink",
+        isFile: () => entry.type === "file",
+        isDirectory: () => entry.type === "dir",
+      };
+    },
     mkdirSync: vi.fn((p: string) => {
       addDir(p);
     }),
@@ -85,6 +94,7 @@ vi.mock("node:fs", async (importOriginal) => {
           name,
           isDirectory: () => type === "dir",
           isFile: () => type === "file",
+          isSymbolicLink: () => type === "symlink",
         }));
       }
       return [...childTypes.keys()].sort();
@@ -329,6 +339,39 @@ describe("snapshot", () => {
       addFile(`${SNAPSHOTS_DIR}/stray-file.txt`, "oops");
 
       expect(listSnapshots()).toEqual([]);
+    });
+  });
+
+  // ── Security: symlink attack prevention ────────────────────────
+
+  describe("symlink attack prevention", () => {
+    it("createSnapshot rejects symlinked .openclaw directory", () => {
+      store.set(OPENCLAW_DIR, { type: "symlink" });
+      expect(() => createSnapshot()).toThrow(/symbolic link/);
+    });
+
+    it("rollback rejects symlinked snapshot source", () => {
+      store.set(`${SNAP}/openclaw`, { type: "symlink" });
+      expect(() => rollbackFromSnapshot(SNAP)).toThrow(/symbolic link/);
+    });
+
+    it("collectFiles skips symlinked entries inside directory tree", () => {
+      addDir(OPENCLAW_DIR);
+      addFile(`${OPENCLAW_DIR}/openclaw.json`, '{"version":"1"}');
+      // Symlink masquerading as a file inside the tree
+      store.set(`${OPENCLAW_DIR}/evil-link`, { type: "symlink" });
+
+      const result = createSnapshot();
+      expect(result).not.toBeNull();
+      if (!result) throw new Error("createSnapshot returned null");
+
+      const manifestPath = `${result}/snapshot.json`;
+      const entry = store.get(manifestPath);
+      if (!entry?.content) throw new Error("manifest not written");
+      const manifest = JSON.parse(entry.content);
+      // The symlink should NOT appear in the manifest
+      expect(manifest.contents).not.toContain("evil-link");
+      expect(manifest.file_count).toBe(1);
     });
   });
 });

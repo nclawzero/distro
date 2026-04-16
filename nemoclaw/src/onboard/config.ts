@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -99,7 +99,14 @@ export function loadOnboardConfig(): NemoClawOnboardConfig | null {
 
 export function saveOnboardConfig(config: NemoClawOnboardConfig): void {
   ensureConfigDir();
-  writeFileSync(configPath(), JSON.stringify(config, null, 2));
+  const path = configPath();
+  writeFileSync(path, JSON.stringify(config, null, 2), { mode: 0o600 });
+  // Belt-and-suspenders: explicit chmod in case umask or platform ignores the mode option
+  try {
+    chmodSync(path, 0o600);
+  } catch {
+    // Non-fatal — the mode option above covers most platforms
+  }
 }
 
 export function clearOnboardConfig(): void {
