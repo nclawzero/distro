@@ -26,7 +26,7 @@
 set -euo pipefail
 
 REPO_URL="root@192.168.207.101:/mnt/datapool/git/nclawzero.git"
-BRANCH="nemoclawzero"
+BRANCH="nclawzero-rebase"
 WORK_DIR="${HOME}/nemoclaw-e2e"
 RESULTS_FILE="/tmp/nemoclaw-e2e-results.txt"
 BASE_TAG="ghcr.io/nvidia/nemoclaw/zeroclaw-sandbox-base:latest"

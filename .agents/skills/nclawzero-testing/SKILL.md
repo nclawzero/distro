@@ -185,7 +185,7 @@ scripts/deploy-test-target.sh --local --stub
 | `--local` | Run on this machine |
 | `--token TOKEN` | GitHub PAT for private repo access |
 | `--nvidia-key KEY` | NVIDIA API key for live inference |
-| `--branch BRANCH` | Branch to test (default: `nemoclawzero`) |
+| `--branch BRANCH` | Branch to test (default: `nclawzero-rebase`) |
 | `--stub` | Use stub images (no Docker Hub required) |
 | `--skip-install` | Skip Docker/Node install |
 | `--keep` | Keep container after test |

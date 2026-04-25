@@ -28,7 +28,7 @@
 #   --token TOKEN         GitHub PAT (for private repo access)
 #   --nvidia-key KEY      NVIDIA API key (nvapi-...) for live inference tests
 #   --repo PATH           Use local checkout instead of cloning (--local mode only)
-#   --branch BRANCH       Branch to test (default: nemoclawzero)
+#   --branch BRANCH       Branch to test (default: nclawzero-rebase)
 #   --results-dir DIR     Where to copy results locally (default: ./e2e-results/)
 #   --skip-install        Skip Docker/Node install (target already provisioned)
 #   --stub                Use stub images (no Docker Hub / GitHub Releases required)
@@ -60,7 +60,7 @@ BREV_INSTANCE=""
 GITHUB_TOKEN=""
 NVIDIA_API_KEY=""
 REPO_PATH=""
-BRANCH="nemoclawzero"
+BRANCH="nclawzero-rebase"
 RESULTS_DIR="./e2e-results"
 SKIP_INSTALL=false
 USE_STUB=false

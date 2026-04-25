@@ -138,7 +138,7 @@ fi
 if [ -d "$REPO/agents/zeroclaw" ] && [ -f "$REPO/agents/zeroclaw/manifest.yaml" ]; then
   pass "agents/zeroclaw/ directory and manifest.yaml exist"
 else
-  fail "agents/zeroclaw/ not found — is the nemoclawzero branch checked out?"
+  fail "agents/zeroclaw/ not found — is the nclawzero-rebase branch checked out?"
   exit 1
 fi
 

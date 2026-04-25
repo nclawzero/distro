@@ -203,7 +203,7 @@ All hooks managed by [prek](https://prek.j178.dev/) (installed via `npm install`
 ## ZeroClaw Agent — Development State
 
 > This section documents the in-progress ZeroClaw agent work as of April 2026.
-> All code lives on the `perlowjanv:nemoclawzero` branch (fork of `NVIDIA/NemoClaw`).
+> All code lives on the `perlowjanv:nclawzero-rebase` branch (fork of `NVIDIA/NemoClaw`).
 > A PR to `NVIDIA/NemoClaw` is blocked pending contributor access being granted.
 
 ### What is ZeroClaw
@@ -212,7 +212,7 @@ ZeroClaw is a Rust-based AI agent runtime (analogous to Hermes, which is Python-
 It binds to port 42617, uses a TOML config, exposes `GET /health → {"status":"ok"}`,
 and loads a NemoClaw WASM plugin compiled from `agents/zeroclaw/plugin/` via the Extism PDK.
 
-### Files Added on `perlowjanv:nemoclawzero`
+### Files Added on `perlowjanv:nclawzero-rebase`
 
 | Path | Purpose |
 |------|---------|
@@ -315,4 +315,4 @@ ARGONAS bare repo                    — LAN source of truth
 
 GitLab mirror: https://gitlab-master.nvidia.com/jperlow/nclawzero
 
-All development is on the `nemoclawzero` branch. Push to ARGONAS, sync to GitLab as needed.
+All development is on the `nclawzero-rebase` branch. Push to ARGONAS, sync to GitLab as needed.

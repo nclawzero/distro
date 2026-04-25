@@ -32,7 +32,7 @@ set -euo pipefail
 
 # ── Defaults ──────────────────────────────────────────────────────
 REPO_URL="root@192.168.207.101:/mnt/datapool/git/nclawzero.git"
-BRANCH="nemoclawzero"
+BRANCH="nclawzero-rebase"
 REPO_PATH=""    # set via --repo; empty means clone
 GITHUB_TOKEN="" # set via --token; needed for private repos
 WORK_DIR="${HOME}/zeroclaw-e2e"

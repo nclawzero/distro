@@ -51,7 +51,7 @@ EXPORTS_DIR = HARNESS_DIR / "exports"
 #   "suite": "cli" | "plugin" | "all" | "e2e",
 #   "duration_seconds": 32.5,
 #   "git_ref": "abc1234",
-#   "git_branch": "nemoclawzero",
+#   "git_branch": "nclawzero-rebase",
 #   "host": "hostname",
 #   "node_version": "v22.22.2",
 #   "summary": {
