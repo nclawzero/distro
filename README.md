@@ -3,7 +3,7 @@
   SPDX-License-Identifier: Apache-2.0
 -->
 
-# nclawzero
+# nclawzero/distro
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue)](LICENSE)
 [![ZeroClaw](https://img.shields.io/badge/ZeroClaw-0.6.9-green)](https://github.com/zeroclaw-labs/zeroclaw/releases/tag/v0.6.9)
@@ -12,6 +12,17 @@
 **nclawzero** is a research project exploring how to run [ZeroClaw](https://github.com/zeroclaw-labs/zeroclaw) agents inside hardened [OpenShell](https://github.com/NVIDIA/OpenShell) sandboxes on memory-constrained and resource-constrained devices for edge and embedded deployments. It started as a fork of [NVIDIA NemoClaw](https://github.com/NVIDIA/NemoClaw) but has diverged significantly — ZeroClaw replaces OpenClaw as the primary agent runtime, and the sandbox tooling, config generation, provider routing, and test harnesses are independently developed.
 
 > **Experimental research software** — not production-ready. Use at your own risk. No support channel, SLA, or guarantee of compatibility with future upstream releases.
+
+> **Repo path note (2026-04-26 reorg):** this is the integration distro
+> for the `nclawzero` family. Now lives at `gitlab.com/nclawzero/distro`
+> (canonical), `github.com/nclawzero/distro` (mirror), and
+> `argonas:/mnt/datapool/git/nclawzero/distro.git` (fleet backup).
+> Sibling projects under the same `nclawzero/` namespace:
+> [`meta`](https://gitlab.com/nclawzero/meta) (Yocto layer),
+> [`pi-gen`](https://gitlab.com/nclawzero/pi-gen) (Pi image builder),
+> [`meta-base`](https://gitlab.com/nclawzero/meta-base) (Yocto BSP),
+> [`debs`](https://gitlab.com/nclawzero/debs) (Debian apt mirror). The
+> previous flat `perlowja/nclawzero` URL auto-redirects on both forges.
 
 ## What nclawzero does
 
