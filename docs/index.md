@@ -3,11 +3,11 @@ title:
   page: "NVIDIA NemoClaw Developer Guide"
   nav: "NemoClaw"
 description:
-  main: "NemoClaw is an open-source reference stack that simplifies running OpenClaw always-on assistants more safely, with a single command."
-  agent: "Provides an open-source reference stack that simplifies running OpenClaw always-on assistants more safely. Use when setting up NemoClaw, exploring the project, or looking for the landing page."
-keywords: ["nemoclaw open source reference stack", "openclaw always-on assistants", "nvidia openshell", "nvidia nemotron"]
+  main: "NemoClaw is an open-source reference stack for running claw-family agents, including OpenClaw, ZeroClaw, and Hermes, inside OpenShell sandboxes."
+  agent: "Provides an open-source reference stack for running claw-family agents inside OpenShell sandboxes. Use when setting up NemoClaw, exploring OpenClaw, ZeroClaw, or Hermes integration, or looking for the landing page."
+keywords: ["nemoclaw open source reference stack", "openclaw zeroclaw hermes", "nvidia openshell", "sandboxed agents"]
 topics: ["generative_ai", "ai_agents"]
-tags: ["openclaw", "openshell", "sandboxing", "inference_routing", "nemoclaw"]
+tags: ["openclaw", "zeroclaw", "hermes", "openshell", "sandboxing", "inference_routing", "nemoclaw"]
 content:
   type: get_started
   difficulty: technical_beginner
@@ -27,13 +27,13 @@ status: published
 :end-before: <!-- end-badges -->
 ```
 
-NVIDIA NemoClaw is an open-source reference stack that simplifies running [OpenClaw](https://openclaw.ai) always-on assistants more safely.
-NemoClaw provides onboarding, lifecycle management, and OpenClaw operations within OpenShell containers.
-It installs the [NVIDIA OpenShell](https://github.com/NVIDIA/OpenShell) runtime, part of NVIDIA Agent Toolkit, an environment designed for executing claws with additional security, and open-source models like [NVIDIA Nemotron](https://build.nvidia.com).
+NVIDIA NemoClaw is an open-source reference stack that simplifies running claw-family agents more safely inside [NVIDIA OpenShell](https://github.com/NVIDIA/OpenShell) sandboxes.
+The public `nclawzero/distro` tree carries adapters for [OpenClaw](https://openclaw.ai), [ZeroClaw](https://github.com/zeroclaw-labs/zeroclaw), and Hermes Agent from Nous Research.
+NemoClaw provides onboarding, lifecycle management, policy wiring, and agent runtime integration within OpenShell containers.
 
 ## Get Started
 
-Install the CLI and launch a sandboxed OpenClaw instance in a few commands.
+Install the CLI, choose an agent runtime, and launch a sandboxed instance in a few commands.
 
 ```{raw} html
 <style>
@@ -143,7 +143,7 @@ Install the CLI and launch a sandboxed OpenClaw instance in a few commands.
 Run `nemoclaw --help` in your terminal to view the full CLI reference.
 You can also clone the [NemoClaw repository](https://github.com/NVIDIA/NemoClaw) to explore the plugin source and blueprint.
 
-Proceed to the [Quickstart](get-started/quickstart.md) for step-by-step instructions.
+Proceed to the [Quickstart](get-started/quickstart.md) for step-by-step instructions, or review [Agent Runtimes](agents/index.md) before choosing OpenClaw, ZeroClaw, or Hermes.
 
 ---
 
@@ -166,7 +166,7 @@ What NemoClaw is: capabilities, benefits, and typical uses.
 :link: about/ecosystem
 :link-type: doc
 
-How OpenClaw, OpenShell, and NemoClaw form a stack and when to use NemoClaw versus OpenShell alone.
+How OpenClaw, ZeroClaw, Hermes, OpenShell, and NemoClaw form a stack and when to use each path.
 
 +++
 {bdg-secondary}`Concept`
@@ -176,7 +176,7 @@ How OpenClaw, OpenShell, and NemoClaw form a stack and when to use NemoClaw vers
 :link: get-started/quickstart
 :link-type: doc
 
-Install the CLI, configure inference, and launch your first sandboxed agent.
+Install the CLI, choose an agent runtime, configure inference, and launch your first sandboxed agent.
 
 +++
 {bdg-secondary}`Tutorial`
@@ -187,6 +187,26 @@ Install the CLI, configure inference, and launch your first sandboxed agent.
 :link-type: doc
 
 CLI commands for launching, connecting, monitoring, and managing sandboxes.
+
++++
+{bdg-secondary}`Reference`
+:::
+
+:::{grid-item-card} Agent Runtimes
+:link: agents/index
+:link-type: doc
+
+Compare OpenClaw, ZeroClaw, and Hermes as NemoClaw sandbox tenants.
+
++++
+{bdg-secondary}`Concept`
+:::
+
+:::{grid-item-card} Platform Support
+:link: get-started/platform-support
+:link-type: doc
+
+Check supported and expected Linux, macOS, arm64, x86, and SBC targets.
 
 +++
 {bdg-secondary}`Reference`
@@ -293,10 +313,22 @@ Release Notes <about/release-notes>
 ```
 
 ```{toctree}
+:caption: Agent Runtimes
+:hidden:
+
+Overview <agents/index>
+Selecting an Agent <agents/selecting-an-agent>
+OpenClaw <agents/openclaw>
+ZeroClaw <agents/zeroclaw>
+Hermes <agents/hermes>
+```
+
+```{toctree}
 :caption: Get Started
 :hidden:
 
 Quickstart <get-started/quickstart>
+Platform Support <get-started/platform-support>
 Windows Prerequisites <get-started/windows-setup>
 ```
 
