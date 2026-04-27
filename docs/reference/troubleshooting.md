@@ -125,15 +125,10 @@ $ export PATH=~/.npm-global/bin:$PATH
 
 Add the `export` line to your `~/.bashrc` or `~/.zshrc` to make it permanent, then re-run the installer.
 
-### Installer fails on NVIDIA Jetson
+### NVIDIA Jetson support
 
-The installer auto-detects NVIDIA Jetson devices (Orin and Thor) and applies required host configuration before the normal install flow.
-If the Jetson setup step fails, verify that you have `sudo` access and that Docker is installed and running.
-
-For JetPack 6 (L4T 36.x), the setup switches iptables to legacy mode and adjusts the Docker daemon configuration.
-For JetPack 7 (L4T 38.x / Thor), only bridge netfilter and sysctl settings are applied.
-
-If the L4T version is not recognized, the setup step is skipped and the installer continues normally.
+Jetson family support is deferred pending hardware validation.
+Use x86_64 or macOS with Docker/Podman containers, or Raspberry Pi family hardware with Yocto-built or pre-built SD images.
 
 ### Port already in use
 
