@@ -3,11 +3,11 @@ title:
   page: "NemoClaw Architecture: Plugin, Blueprint, and Sandbox Structure"
   nav: "Architecture"
 description:
-  main: "Learn how NemoClaw combines a lightweight CLI plugin with a versioned blueprint to move OpenClaw into a controlled sandbox."
-  agent: "Describes how NemoClaw combines a CLI plugin with a versioned blueprint to move OpenClaw into a controlled sandbox. Use when looking up NemoClaw architecture, plugin structure, or blueprint design."
-keywords: ["nemoclaw architecture", "nemoclaw plugin blueprint structure"]
+  main: "Learn how NemoClaw combines a lightweight CLI plugin, versioned blueprint, and per-agent adapters to move OpenClaw, ZeroClaw, and Hermes into controlled sandboxes."
+  agent: "Describes how NemoClaw combines a CLI plugin, versioned blueprint, and per-agent adapters to move OpenClaw, ZeroClaw, and Hermes into controlled sandboxes. Use when looking up NemoClaw architecture, plugin structure, blueprint design, or multi-agent sandbox integration."
+keywords: ["nemoclaw architecture", "nemoclaw plugin blueprint structure", "openclaw zeroclaw hermes agents"]
 topics: ["generative_ai", "ai_agents"]
-tags: ["openclaw", "openshell", "sandboxing", "blueprints", "inference_routing"]
+tags: ["openclaw", "zeroclaw", "hermes", "openshell", "sandboxing", "blueprints", "inference_routing"]
 content:
   type: reference
   difficulty: intermediate
@@ -22,7 +22,7 @@ status: published
 
 # Architecture
 
-NemoClaw has two main components: a TypeScript plugin that integrates with the OpenClaw CLI, and a Python blueprint that orchestrates OpenShell resources.
+NemoClaw has three main architectural layers: a TypeScript CLI/plugin layer, a versioned blueprint that orchestrates OpenShell resources, and per-agent adapters for the runtime that runs inside the sandbox.
 
 ## System Overview
 
@@ -40,7 +40,7 @@ graph LR
     USER(["👤 User"]):::user
 
     subgraph EXTERNAL["External Services"]
-        INFERENCE["Inference Provider<br/><small>NVIDIA Endpoints · OpenAI<br/>Anthropic · Ollama · vLLM</small>"]:::external
+        INFERENCE["Inference Provider<br/><small>NVIDIA Endpoints · OpenAI-compatible<br/>Together · Groq · Ollama · vLLM</small>"]:::external
         MSGAPI["Messaging Platforms<br/><small>Telegram · Discord · Slack</small>"]:::external
         INTERNET["Internet<br/><small>PyPI · npm · GitHub · APIs</small>"]:::external
     end
@@ -62,8 +62,8 @@ graph LR
 
             subgraph SANDBOX["Sandbox Container 🔒"]
                 direction TB
-                AGENT["Agent<br/><small>OpenClaw or any<br/>compatible agent</small>"]:::agent
-                PLUG["NemoClaw Plugin<br/><small>Extends agent with<br/>managed configuration</small>"]:::sandbox
+                AGENT["Agent tenant<br/><small>OpenClaw · ZeroClaw · Hermes</small>"]:::agent
+                PLUG["Adapter<br/><small>manifest · policy · entrypoint</small>"]:::sandbox
             end
         end
     end
@@ -150,16 +150,71 @@ flowchart LR
 4. Apply. The runner executes the plan by calling `openshell` CLI commands.
 5. Status. The runner reports current state.
 
+## Agent Sandbox Pattern
+
+Each supported agent is a tenant inside an OpenShell sandbox.
+The tenant adapter supplies the runtime-specific contract while OpenShell supplies the isolation boundary.
+
+```{mermaid}
+flowchart LR
+    OS["OpenShell sandbox runtime"]
+
+    subgraph OC["agents/openclaw"]
+      OCM["manifest.yaml"]
+      OCP["openclaw-sandbox.yaml"]
+      OCS["scripts/nemoclaw-start.sh"]
+    end
+
+    subgraph ZC["agents/zeroclaw"]
+      ZCM["manifest.yaml"]
+      ZCP["policy-additions.yaml"]
+      ZCS["start.sh"]
+    end
+
+    subgraph HM["agents/hermes"]
+      HMM["manifest.yaml"]
+      HMP["policy-additions.yaml"]
+      HMS["start.sh"]
+    end
+
+    OCM --> OS
+    OCP --> OS
+    OCS --> OS
+    ZCM --> OS
+    ZCP --> OS
+    ZCS --> OS
+    HMM --> OS
+    HMP --> OS
+    HMS --> OS
+```
+
+The pattern is the same for all three runtimes:
+
+| Adapter element | Purpose |
+|-----------------|---------|
+| Manifest | Declares language, install method, binary path, gateway command, health probe, config layout, API surface, and phone-home hosts. |
+| Policy | Adds runtime-specific filesystem layout, process user, package registry, messaging endpoints, and phone-home allowlist. |
+| Entrypoint | Verifies immutable config, prepares writable state, applies proxy settings, drops capabilities where possible, and starts the gateway process. |
+| Image | Installs the runtime and supporting packages, generates build-time config, and pins config hashes for startup verification. |
+
+OpenClaw still uses legacy root-level image and entrypoint paths recorded in `agents/openclaw/manifest.yaml`.
+ZeroClaw and Hermes keep their image, policy, config generator, and entrypoint files directly under `agents/<name>/`.
+
 ## Sandbox Environment
 
-The sandbox runs the
-[`ghcr.io/nvidia/openshell-community/sandboxes/openclaw`](https://github.com/NVIDIA/OpenShell-Community)
-container image. Inside the sandbox:
+The sandbox runs the agent image selected by the adapter.
+Inside the sandbox:
 
-- OpenClaw runs with the NemoClaw plugin pre-installed.
+- The selected agent runs with its NemoClaw adapter or plugin installed.
 - Inference calls are routed through OpenShell to the configured provider.
-- Network egress is restricted by the baseline policy in `openclaw-sandbox.yaml`.
-- Filesystem access is confined to `/sandbox` and `/tmp` for read-write access, with system paths read-only.
+- Network egress is restricted by the selected agent policy.
+- Filesystem access uses an immutable config directory plus a writable state directory.
+
+| Agent | Immutable config | Writable state | Gateway port |
+|-------|------------------|----------------|--------------|
+| OpenClaw | `/sandbox/.openclaw` | `/sandbox/.openclaw-data` | `18789` |
+| ZeroClaw | `/sandbox/.zeroclaw` | `/sandbox/.zeroclaw-data` | `42617` |
+| Hermes | `/sandbox/.hermes` | `/sandbox/.hermes-data` | `8642` public, `18642` internal |
 
 ## Inference Routing
 
@@ -193,3 +248,9 @@ The following environment variables configure optional services and local access
 
 For normal setup and reconfiguration, prefer `nemoclaw onboard` over editing these files by hand.
 Do not treat `NEMOCLAW_DISABLE_DEVICE_AUTH` as a runtime setting for an already-created sandbox.
+
+## Related Agent Runbooks
+
+- [OpenClaw](../agents/openclaw.md) documents the legacy/default adapter path.
+- [ZeroClaw](../agents/zeroclaw.md) documents the primary `nclawzero/distro` runtime.
+- [Hermes](../agents/hermes.md) documents the Nous Research Hermes Agent adapter.

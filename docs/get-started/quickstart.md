@@ -3,11 +3,11 @@ title:
   page: "NemoClaw Quickstart: Install, Launch, and Run Your First Agent"
   nav: "Quickstart"
 description:
-  main: "Install NemoClaw, launch a sandbox, and run your first agent prompt."
-  agent: "Installs NemoClaw, launches a sandbox, and runs the first agent prompt. Use when onboarding, installing, or launching a NemoClaw sandbox for the first time."
-keywords: ["nemoclaw quickstart", "install nemoclaw openclaw sandbox"]
+  main: "Install NemoClaw, choose an agent runtime, launch a sandbox, and run your first agent prompt."
+  agent: "Installs NemoClaw, helps choose OpenClaw, ZeroClaw, or Hermes, launches a sandbox, and runs the first agent prompt. Use when onboarding, installing, or launching a NemoClaw sandbox for the first time."
+keywords: ["nemoclaw quickstart", "install nemoclaw openclaw zeroclaw hermes sandbox"]
 topics: ["generative_ai", "ai_agents"]
-tags: ["openclaw", "openshell", "sandboxing", "inference_routing", "nemoclaw"]
+tags: ["openclaw", "zeroclaw", "hermes", "openshell", "sandboxing", "inference_routing", "nemoclaw"]
 content:
   type: get_started
   difficulty: technical_beginner
@@ -29,7 +29,7 @@ Do not use this software in production environments.
 File issues and feedback through the GitHub repository as the project continues to stabilize.
 :::
 
-Follow these steps to get started with NemoClaw and your first sandboxed OpenClaw agent.
+Follow these steps to get started with NemoClaw and your first sandboxed agent.
 
 ## Prerequisites
 
@@ -51,7 +51,7 @@ The sandbox image is approximately 2.4 GB compressed. During image push, the Doc
 |------------|----------------------------------|
 | Node.js    | 22.16 or later |
 | npm        | 10 or later |
-| Platform   | See below |
+| Platform   | See [Platform Support](platform-support.md) |
 
 :::{warning} OpenShell lifecycle
 For NemoClaw-managed environments, use `nemoclaw onboard` when you need to create or recreate the OpenShell gateway or sandbox.
@@ -72,13 +72,34 @@ Availability is not limited to these entries, but untested configurations may ha
 | Windows WSL2 | Docker Desktop (WSL backend) | Tested with limitations | Requires WSL2 with Docker Desktop backend. |
 <!-- platform-matrix:end -->
 
-## Install NemoClaw and Onboard OpenClaw Agent
+## Choose Your Agent
+
+Before onboarding, choose the runtime that should run inside the sandbox.
+For a full decision guide, see [Selecting an Agent](../agents/selecting-an-agent.md).
+
+| Runtime | Choose when | Per-agent runbook |
+|---------|-------------|-------------------|
+| OpenClaw | You want the upstream NemoClaw assistant path, OpenClaw dashboard, device pairing, and OpenClaw plugins. | [OpenClaw](../agents/openclaw.md) |
+| ZeroClaw | You want the primary `nclawzero/distro` Rust runtime, TOML config, OpenAI-compatible API, and edge-agentic provider routing model. | [ZeroClaw](../agents/zeroclaw.md) |
+| Hermes | You want Hermes Agent from Nous Research inside the NemoClaw sandbox, with YAML plus `.env` config and an OpenAI-compatible API. | [Hermes](../agents/hermes.md) |
+
+Each agent has its own gateway port and health probe:
+
+| Runtime | Gateway port | Health probe |
+|---------|--------------|--------------|
+| OpenClaw | `18789` | `http://localhost:18789/` |
+| ZeroClaw | `42617` | `http://localhost:42617/health` |
+| Hermes | `8642` | `http://localhost:8642/health` |
+
+## Install NemoClaw and Onboard an Agent
 
 Download and run the installer script.
 The script installs Node.js if it is not already present, then runs the guided onboard wizard to create a sandbox, configure inference, and apply security policies.
+Where the CLI offers an agent selection flow, pick the runtime you chose above.
+If your current build defaults to OpenClaw, use the per-agent runbooks for the adapter-specific build and health checks.
 
 :::{note}
-NemoClaw creates a fresh OpenClaw instance inside the sandbox during the onboarding process.
+NemoClaw creates a fresh agent instance inside the sandbox during the onboarding process.
 :::
 
 ```bash
@@ -111,13 +132,13 @@ Logs:        nemoclaw my-assistant logs --follow
 
 ## Chat with the Agent
 
-Connect to the sandbox, then chat with the agent through the TUI or the CLI.
+Connect to the sandbox, then chat with the agent through its runtime-specific interface.
 
 ```bash
 nemoclaw my-assistant connect
 ```
 
-In the sandbox shell, open the OpenClaw terminal UI and start a chat:
+For OpenClaw, open the terminal UI and start a chat:
 
 ```bash
 openclaw tui
@@ -127,6 +148,20 @@ Alternatively, send a single message and print the response:
 
 ```bash
 openclaw agent --agent main --local -m "hello" --session-id test
+```
+
+For ZeroClaw or Hermes, connect an OpenAI-compatible client to the runtime API:
+
+| Runtime | API base URL |
+|---------|--------------|
+| ZeroClaw | `http://localhost:42617/v1` |
+| Hermes | `http://localhost:8642/v1` |
+
+Confirm the health endpoint first:
+
+```bash
+curl http://localhost:42617/health
+curl http://localhost:8642/health
 ```
 
 ## Uninstall
@@ -148,6 +183,8 @@ For troubleshooting installation or onboarding issues, see the [Troubleshooting 
 ## Next Steps
 
 - [Switch inference providers](../inference/switch-inference-providers.md) to use a different model or endpoint.
+- [Agent Runtimes](../agents/index.md) to compare OpenClaw, ZeroClaw, and Hermes.
+- [Platform Support](platform-support.md) to check target platform and container runtime expectations.
 - [Approve or deny network requests](../network-policy/approve-network-requests.md) when the agent tries to reach external hosts.
 - [Customize the network policy](../network-policy/customize-network-policy.md) to pre-approve trusted domains.
 - [Deploy to a remote GPU instance](../deployment/deploy-to-remote-gpu.md) for always-on operation.
