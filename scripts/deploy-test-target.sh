@@ -67,7 +67,7 @@ USE_STUB=false
 KEEP_CONTAINER=false
 VERBOSE=false
 
-REPO_URL="root@192.168.207.101:/mnt/datapool/git/nclawzero.git"
+REPO_URL="root@10.0.0.101:/mnt/datapool/git/nclawzero.git"
 REMOTE_WORK_DIR="\$HOME/nemoclaw-e2e"
 REMOTE_RESULTS="/tmp/zeroclaw-e2e-results.txt"
 
@@ -244,7 +244,7 @@ step "Setting up repository on target"
 CLONE_CMD="REPO_URL='${REPO_URL}' BRANCH='${BRANCH}'"
 if [[ -n "$GITHUB_TOKEN" ]]; then
   # Inject token into HTTPS URL for private repo access
-  CLONE_CMD="REPO_URL='root@192.168.207.101:/mnt/datapool/git/nclawzero.git' BRANCH='${BRANCH}'"
+  CLONE_CMD="REPO_URL='root@10.0.0.101:/mnt/datapool/git/nclawzero.git' BRANCH='${BRANCH}'"
 fi
 
 run_remote "$(

@@ -70,7 +70,7 @@
 ### Build the ZeroClaw sandbox image
 
 ```bash
-git clone --branch nclawzero-rebase root@192.168.207.101:/mnt/datapool/git/nclawzero.git
+git clone --branch nclawzero-rebase root@10.0.0.101:/mnt/datapool/git/nclawzero.git
 cd nclawzero
 
 # Build the base image (downloads ZeroClaw v0.6.9 binary)

@@ -189,13 +189,13 @@ nclawzero maintains two Raspberry Pi test targets for ZeroClaw edge validation:
 
 | Target | IP | Role |
 |--------|-----|------|
-| zeropi | 192.168.207.56 | Minimal footprint test target |
-| clawpi | 192.168.207.54 | Full-featured test target |
+| zeropi | 10.0.0.56 | Minimal footprint test target |
+| clawpi | 10.0.0.54 | Full-featured test target |
 
 Deploy and test on a target:
 
 ```bash
-scripts/deploy-test-target.sh --ssh pi@192.168.207.56 --nvidia-key nvapi-xxx
+scripts/deploy-test-target.sh --ssh pi@10.0.0.56 --nvidia-key nvapi-xxx
 ```
 
 ## Related Skills

@@ -164,7 +164,7 @@ curl http://localhost:42617/health
 
 ```bash
 # SSH to a remote host
-scripts/deploy-test-target.sh --ssh pi@192.168.207.56 --nvidia-key nvapi-xxx
+scripts/deploy-test-target.sh --ssh pi@10.0.0.56 --nvidia-key nvapi-xxx
 
 # Brev cloud instance
 scripts/deploy-test-target.sh --brev awesome-gpu-name --nvidia-key nvapi-xxx
@@ -197,17 +197,17 @@ nclawzero maintains Raspberry Pi test targets for edge validation:
 
 | Target | IP | Role | Description |
 |--------|-----|------|-------------|
-| zeropi | 192.168.207.56 | Minimal footprint | ARM64 Pi for baseline resource testing |
-| clawpi | 192.168.207.54 | Full-featured | ARM64 Pi for full ZeroClaw feature testing |
+| zeropi | 10.0.0.56 | Minimal footprint | ARM64 Pi for baseline resource testing |
+| clawpi | 10.0.0.54 | Full-featured | ARM64 Pi for full ZeroClaw feature testing |
 
 ### Deploying to a Test Target
 
 ```bash
 # Deploy to zeropi (minimal footprint)
-scripts/deploy-test-target.sh --ssh pi@192.168.207.56 --nvidia-key nvapi-xxx
+scripts/deploy-test-target.sh --ssh pi@10.0.0.56 --nvidia-key nvapi-xxx
 
 # Deploy to clawpi (full-featured)
-scripts/deploy-test-target.sh --ssh pi@192.168.207.54 --nvidia-key nvapi-xxx
+scripts/deploy-test-target.sh --ssh pi@10.0.0.54 --nvidia-key nvapi-xxx
 ```
 
 Results are written to `./e2e-results/` on the invoking machine (configurable with `--results-dir`).
