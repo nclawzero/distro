@@ -18,7 +18,7 @@ This is the preferred method for reporting security concerns across all NVIDIA p
 
 ### Email
 
-Send an encrypted email to [psirt@nvidia.com](mailto:psirt@nvidia.com).
+Send an encrypted email to [jperlow@gmail.com](mailto:jperlow@gmail.com).
 Use the [NVIDIA public PGP key](https://www.nvidia.com/en-us/security/pgp-key) to encrypt the message.
 
 ### GitHub Private Vulnerability Reporting
