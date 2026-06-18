@@ -226,10 +226,10 @@ Served from the same port (42617). React SPA with:
 
 | System | IP | RAM | User | Path |
 |--------|-----|-----|------|------|
-| zeropi | 192.168.207.56 | 2GB | pi | ~/nclawzero |
-| clawpi | 192.168.207.54 | 8GB | pi | ~/nclawzero |
+| zeropi | 10.0.0.56 | 2GB | pi | ~/nclawzero |
+| clawpi | 10.0.0.54 | 8GB | pi | ~/nclawzero |
 
-SSH: `sshpass -p "Gumbo@Kona1b" ssh pi@192.168.207.5{4,6}`
+SSH: `sshpass -p "<sshpass-redacted>" ssh pi@10.0.0.5{4,6}`
 
 ### V7.1 Test Battery
 ```bash
@@ -243,7 +243,7 @@ Current status: 1852 tests passing, 0 failures.
 
 ## Yocto Build (meta-nclawzero)
 
-Building on ARGOS (192.168.207.22):
+Building on ARGOS (10.0.0.22):
 ```
 /mnt/argonas/nclawzero-yocto/
   poky/                    (scarthgap)

@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # ── Defaults ──────────────────────────────────────────────────────
-REPO_URL="root@192.168.207.101:/mnt/datapool/git/nclawzero.git"
+REPO_URL="root@10.0.0.101:/mnt/datapool/git/nclawzero.git"
 BRANCH="nclawzero-rebase"
 REPO_PATH=""    # set via --repo; empty means clone
 GITHUB_TOKEN="" # set via --token; needed for private repos
@@ -176,7 +176,7 @@ else
   # Set auth header if token provided
   CLONE_URL="$REPO_URL"
   if [ -n "$GITHUB_TOKEN" ]; then
-    CLONE_URL="root@192.168.207.101:/mnt/datapool/git/nclawzero.git"
+    CLONE_URL="root@10.0.0.101:/mnt/datapool/git/nclawzero.git"
   fi
 
   if [ -d "${WORK_DIR}/.git" ]; then

@@ -25,7 +25,7 @@
 
 set -euo pipefail
 
-REPO_URL="root@192.168.207.101:/mnt/datapool/git/nclawzero.git"
+REPO_URL="root@10.0.0.101:/mnt/datapool/git/nclawzero.git"
 BRANCH="nclawzero-rebase"
 WORK_DIR="${HOME}/nemoclaw-e2e"
 RESULTS_FILE="/tmp/nemoclaw-e2e-results.txt"

@@ -274,7 +274,7 @@ On any system with full internet access:
 scripts/zeroclaw-e2e.sh --repo /path/to/nclawzero
 
 # Option 2: clone from ARGONAS first
-git clone root@192.168.207.101:/mnt/datapool/git/nclawzero.git
+git clone root@10.0.0.101:/mnt/datapool/git/nclawzero.git
 cd nclawzero && scripts/zeroclaw-e2e.sh --repo .
 ```
 
