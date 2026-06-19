@@ -1,5 +1,9 @@
 # NCZ — Agentic Linux Distribution
 
+> **🌐 Language:** English · [简体中文](README.zh-CN.md)
+>
+> **📚 Start here:** [AI/ML Stack Reference](https://gitlab.com/ncz-os/cix-installer/-/blob/main/docs/AI-ML-STACK.md) ([中文](https://gitlab.com/ncz-os/cix-installer/-/blob/main/docs/AI-ML-STACK.zh-CN.md)) · [How Did We Get Here — engineering post-mortem](https://gitlab.com/ncz-os/cix-installer/-/blob/main/docs/HOW-DID-WE-GET-HERE.md) ([中文](https://gitlab.com/ncz-os/cix-installer/-/blob/main/docs/HOW-DID-WE-GET-HERE.zh-CN.md)) · [NCZ-OS Organization](docs/NCZ-OS-ORGANIZATION.md)
+
 **NCZ Distribution Core** is the heart of NCZ: an **agentic Linux distribution
 for Arm and Intel systems**, and the home of **MNEMOS**, the agentic memory
 system.
