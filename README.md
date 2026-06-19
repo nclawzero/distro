@@ -62,13 +62,24 @@ GitLab `ncz-os/*` is the **canonical source of truth**. GitHub and Codeberg are
 - GitHub (mirror): https://github.com/ncz-os/distro-core
 - Codeberg (mirror): https://codeberg.org/ncz-os/distro-core
 
-## Supported hardware
+## Supported hardware (and what's actually tested)
 
-| Architecture | Targets | Status |
+> Vendor-neutral *by design* ≠ tested everywhere. To date the distribution
+> has only been validated on **one** board. Testers and donated hardware are
+> the fastest way to expand this list.
+
+| Architecture | Target | Status |
 | --- | --- | --- |
-| Arm (aarch64) | CIX Sky1 (Minisforum MS-R1) | Active |
-| Arm (aarch64) | Raspberry Pi | Active |
-| Intel / AMD (x86-64) | Desktops / servers | Planned |
+| Arm (aarch64) | **CIX Sky1 — Minisforum MS-R1** (32 GB / 64 GB) | ✅ **Tested** — the only validated platform |
+| Arm (aarch64) | **CIX Sky1 — Radxa Orion O6 / O6N** | ❌ **Untested — testers wanted, board needed** (different board, same SoC) |
+| Arm (aarch64) | **CIX Sky1 — Framework add-in board** | ❌ Untested — no hardware in hand |
+| Arm (aarch64) | **CIX Sky1 — Orange Pi (Cix variants)** | ❌ Untested — no hardware in hand |
+| Arm (aarch64) | Raspberry Pi | 🚧 Builder exists (pi-gen); not yet validated |
+| Intel / AMD (x86-64) | Desktops / servers | 🗺️ Planned |
+
+**If you can help:** an O6 (or any non-MS-R1 Cix board) in our hands, or a
+community tester filing issues, directly unblocks support. Radxa, Framework,
+Orange Pi — we'd love a board.
 
 ## License
 
