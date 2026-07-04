@@ -1,3 +1,10 @@
+> ## 📍 Canonical source: GitLab
+> The authoritative source for this project lives on GitLab — always: **https://gitlab.com/ncz-os/distro-core**
+>
+> This GitHub repository is retained **only** to host release assets. Development, issues, and merge requests happen on GitLab.
+
+---
+
 # NCZ — Agentic Linux Distribution
 
 > **🌐 Language:** English · [简体中文](README.zh-CN.md)
