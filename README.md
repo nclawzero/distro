@@ -1,3 +1,11 @@
+# ⚠️ This is a mirror — the canonical repo lives on GitLab
+
+### 👉 https://gitlab.com/ncz-os/distro-core
+
+**Source, releases, issues, merge requests, and CI all live on GitLab.** This GitHub copy is a read-only mirror and may lag. Please file issues and get releases there.
+
+---
+
 > ## 📍 Canonical source: GitLab
 > The authoritative source for this project lives on GitLab — always: **https://gitlab.com/ncz-os/distro-core**
 >
